@@ -1,8 +1,7 @@
 # halalBites
-
 HalalFinder NYC is a mobile application designed to help users discover halal food options in New York City. Leveraging advanced AI technologies, the app provides personalized recommendations, sentiment analysis on reviews, and a chatbot for customer support. With HalalFinder NYC, finding your next halal meal is easier than ever.
 
-Features:
+Features
 
 Comprehensive Listings: Browse a comprehensive list of halal food locations across NYC.
 Personalized Recommendations: Get suggestions tailored to your taste and preferences.
@@ -11,8 +10,7 @@ Interactive Map: View all halal locations on an interactive map and find the clo
 Chatbot Support: Get quick assistance and answers to your questions with an AI-powered chatbot.
 User Reviews and Ratings: Check out reviews and ratings from other users.
 Favorites: Save your favorite locations for easy access.
-
-Technologies Used:
+Technologies Used
 
 Frontend: React Native
 Backend: Node.js with Express
