@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name><![CDATA[MuslimFoodies' Halal Map of NYC]]></name>
+    <description/>
+    <NetworkLink>
+      <name><![CDATA[MuslimFoodies' Halal Map of NYC]]></name>
+      <Link>
+        <href><![CDATA[https://www.google.com/maps/d/u/0/kml?forcekml=1&mid=1FXuBT5cZnlNTl-_K4B4MG1r2736dUyYk]]></href>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>
