@@ -221,6 +221,7 @@ h6 {
 /*--------------------------------------------------------------
 # Global Header
 --------------------------------------------------------------*/
+
 .header {
   color: var(--default-color);
   background-color: var(--background-color);
@@ -609,6 +610,82 @@ h6 {
 .footer .credits {
   margin-top: 5px;
   font-size: 13px;
+}
+
+/* Wrapper for the entire page */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Ensure the wrapper takes up the full height of the viewport */
+}
+
+/* Main content should stretch to fill available space */
+.content {
+  flex: 1;
+}
+
+/* Footer always at the bottom */
+footer#footer {
+  background-color: #222;
+  color: white;
+  padding: 20px 0;
+  text-align: center;
+}
+
+header#header {
+  background-color: white;
+  padding: 10px 20px;
+  z-index: 1030;
+  border-bottom: 1px solid #eee;
+}
+
+header#header img {
+  height: 50px;
+  width: auto;
+}
+
+nav#navmenu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+nav#navmenu ul li {
+  margin: 0 15px;
+}
+
+nav#navmenu ul li a {
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+nav#navmenu ul li a:hover,
+nav#navmenu ul li a.active {
+  color: #007bff;
+}
+
+nav#navmenu ul li.dropdown ul {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  list-style: none;
+  padding: 10px;
+  margin: 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+nav#navmenu ul li.dropdown:hover ul {
+  display: block;
+}
+
+.page-header {
+  text-align: center;
+  margin: 20px 0;
 }
 
 /*--------------------------------------------------------------
@@ -1724,6 +1801,7 @@ section,
   grid-template-columns: 300px 1fr 1fr; /* Sidebar, Map, and List */
   height: calc(100vh - 60px);
 }
+
 #map {
   height: 100%;
   position: sticky;
@@ -1731,15 +1809,53 @@ section,
   top: 0;
 }
 .sidebar {
-  background: white;
-  padding: 1.5rem;
-  border-right: 1px solid #eee;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+  width: 250px; /* Adjust width as needed */
+  background-color: #f9f9f9; /* Light background color */
+  padding: 20px; /* Add padding for spacing */
+  border-right: 1px solid #ddd; /* Divider line */
+  border-radius: 12px 12px 0 0; /* Round top-left and top-right corners */
+  position: relative; /* Required for ::before positioning */
 }
 
-.filters {
-  margin-bottom: 2rem;
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: -10px; /* Slightly above the sidebar */
+  left: 0;
+  right: 0;
+  height: 10px; /* Adjust height of shadow extension */
+  background: rgba(0, 0, 0, 0.1); /* Shadow color */
+  border-radius: 12px 12px 0 0; /* Match the sidebar’s rounding */
+  z-index: -1; /* Place it behind the sidebar */
 }
+
+
+.filter-section {
+  margin-bottom: 20px; /* Space between sections */
+}
+
+.filter-section h4 {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  color: #333;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+}
+
+.filter-section label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+}
+
+.filter-section input[type="checkbox"] {
+  margin-right: 10px;
+}
+
 .filters h3 { margin-bottom: 0.5rem; }
 .filters label { display: block; margin-bottom: 0.5rem; cursor: pointer; }
 .filters input[type="checkbox"] {
@@ -1760,7 +1876,7 @@ section,
   overflow-y: auto;
   height: 100%;
 }
-.card {
+.restaurant-card {
   background: white;
   border-radius: 10px;
   padding: 1rem;
@@ -1768,21 +1884,21 @@ section,
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.card:hover {
+.restaurant-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   background: linear-gradient(to right, #a31616, #a31616);
   color: white;
 }
-.card h2 {
+.restaurant-card h2 {
   color: #333;
   margin-bottom: 0.5rem;
 }
-.card p {
+.restaurant-card p {
   color: #666;
   margin-bottom: 0.25rem;
 }
-.card .rating {
+.restaurant-card .rating {
   font-size: 1.2rem;
   color: #eab308;
 }
@@ -1790,6 +1906,31 @@ section,
   color: white;
 }
 
+/* Pagination controls */
+#pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+#pagination-controls button {
+  padding: 10px 15px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#pagination-controls button.active-page {
+  background-color: red;
+  color: white;
+}
+
+#pagination-controls button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
 
 @media (max-width: 768px) {
   .layout {
@@ -1797,6 +1938,34 @@ section,
   }
   #map {
     height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout {
+    display: flex;
+    flex-direction: column;
+  }
+}
+@media (max-width: 768px) {
+  footer#footer {
+    font-size: 0.9rem;
+    padding: 10px 5px;
+  }
+}
+@media (max-width: 768px) {
+  .sidebar {
+    display: none; /* Hide sidebar by default */
+    position: fixed;
+    top: 60px; /* Adjust to match header height */
+    left: 0;
+    width: 250px; /* Set sidebar width */
+    height: calc(100vh - 60px); /* Full-height minus header */
+    background-color: #f9f9f9;
+    z-index: 1000;
+    overflow-y: auto;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
   }
 }
 
@@ -1907,4 +2076,118 @@ input[type="radio"]:checked + label {
   top: 50%;
   transform: translateY(-50%);
   color: #666;
+}
+
+
+
+/* Ensure wrapper covers the full height of the viewport for short content */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Allow content to grow and push footer to the bottom */
+.layout {
+  flex: 1;
+}
+
+/* Footer styling (non-fixed) */
+footer#footer {
+  background-color: #222;
+  color: white;
+  text-align: center;
+  padding: 15px 0;
+  width: 100%;
+}
+
+
+.chat-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.chat-button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 50%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  text-align: center;
+  font-size: 24px;
+}
+
+.chat-box {
+  width: 300px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-box.hidden {
+  display: none;
+}
+
+.chat-header {
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.chat-message {
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+}
+
+.chat-message.bot {
+  background-color: #f1f1f1;
+  text-align: left;
+}
+
+.chat-message.user {
+  background-color: #007bff;
+  color: white;
+  text-align: right;
+}
+
+.chat-form {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+}
+
+.send-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  margin-left: 5px;
+  border-radius: 4px;
+  cursor: pointer;
 }

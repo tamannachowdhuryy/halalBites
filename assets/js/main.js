@@ -175,47 +175,154 @@
 
 })();
 
-const restaurants = [
-  {
-    name: "Kabab King",
-    cuisine: "Pakistani",
-    address: "73-01 37th Ave, Jackson Heights",
-    rating: 4.7,
-    reviews: 3700,
-    price: 2, // $$
-    category: ["pakistani"],
-    features: ["delivery", "takeout", "good-for-dinner"],
-    lat: 40.7489,
-    lng: -73.8927,
-  },
-  {
-    name: "Shah's Halal",
-    cuisine: "Middle Eastern",
-    address: "68-19 Main St, Flushing",
-    rating: 4.5,
-    reviews: 2500,
-    price: 1, // $
-    category: ["middle-eastern"],
-    features: ["outdoor-seating", "good-for-lunch"],
-    lat: 40.7469,
-    lng: -73.8247,
-  },
-];
 
-// Initialize map
+// Global variables
 const map = L.map("map").setView([40.7489, -73.8927], 12);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+const markers = {}; // Store markers globally
+let restaurants = []; // Declare restaurants globally
+let currentPage = 1; // Current page
+const itemsPerPage = 4; // Number of items per page
 
-const markers = {};
+function loadRestaurantsData(csvFilePath) {
+  fetch(csvFilePath)
+    .then((response) => response.text())
+    .then((csvData) => {
+      const parsedData = Papa.parse(csvData, { header: true });
+      restaurants = parsedData.data.map((restaurant) => ({
+        name: restaurant.Name,
+        borough: restaurant.Boroughs, // Add Boroughs column
+        cuisine: restaurant.Cuisine,
+        address: restaurant.Address,
+        phoneNumber: restaurant["Phone Number"],
+        website: restaurant.Website,
+        rating: parseFloat(restaurant.Rating),
+        reviews: parseInt(restaurant.Reviews, 10),
+        price: parseInt(restaurant.Price, 10),
+        category: restaurant.Category.split(",").map((c) => c.trim()),
+        features: restaurant.Features.split(",").map((f) => f.trim()),
+        lat: parseFloat(restaurant.Lat),
+        lng: parseFloat(restaurant.Lng),
+      }));
 
-function addMarkers() {
+      // Get the current borough based on the file name
+      const currentPage = window.location.pathname.split("/").pop().replace(".html", "");
+      const filteredRestaurants = restaurants.filter((r) =>
+        r.borough?.toLowerCase() === currentPage.toLowerCase()
+      );
+
+      // Display the first page of filtered restaurants
+      displayRestaurants(1, filteredRestaurants);
+
+      // Add markers to the map for the filtered restaurants
+      addMarkers(filteredRestaurants);
+    })
+    .catch((error) => console.error("Error loading CSV:", error));
+}
+
+
+function displayRestaurants(page, restaurantsToShow = restaurants) {
+  const container = document.getElementById("restaurants");
+  container.innerHTML = ""; // Clear existing content
+
+  const startIndex = (page - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
+  const currentRestaurants = restaurantsToShow.slice(startIndex, endIndex);
+
+  currentRestaurants.forEach((restaurant) => {
+    const card = document.createElement("div");
+    card.classList.add("restaurant-card");
+    card.innerHTML = `
+      <div class="card-content">
+        <h2>${restaurant.name}</h2>
+        <p><strong>Cuisine:</strong> ${restaurant.cuisine}</p>
+        <p><strong>Address:</strong> ${restaurant.address}</p>
+        <p><strong>Phone:</strong> ${restaurant.phoneNumber || "N/A"}</p>
+        <p><strong>Rating:</strong> ${restaurant.rating} ⭐</p>
+        <p><strong>Reviews:</strong> ${restaurant.reviews}</p>
+        ${restaurant.website ? `<p><strong>Website:</strong> <a href="${restaurant.website}" target="_blank">${restaurant.website}</a></p>` : "<p><strong>Website:</strong> N/A</p>"}
+        <p><strong>Price:</strong> ${"$".repeat(restaurant.price)}</p>
+        <p><strong>Features:</strong> ${restaurant.features.join(", ")}</p>
+      </div>
+    `;
+
+    card.addEventListener("click", () => {
+      map.setView([restaurant.lat, restaurant.lng], 15);
+      markers[restaurant.name].openPopup();
+    });
+
+    container.appendChild(card);
+  });
+
+  updatePaginationControls(restaurantsToShow);
+}
+
+
+
+// Function to add markers to the map
+function addMarkers(restaurants) {
   restaurants.forEach((r) => {
-    const marker = L.marker([r.lat, r.lng])
-      .bindPopup(`<b>${r.name}</b><br>${r.cuisine}<br>${r.address}`)
-      .addTo(map);
-    markers[r.name] = marker;
+    if (r.lat && r.lng) {
+      const marker = L.marker([r.lat, r.lng])
+        .bindPopup(`<b>${r.name}</b><br>${r.cuisine}<br>${r.address}`)
+        .addTo(map);
+      markers[r.name] = marker; // Store marker by name
+    }
   });
 }
+
+// Function to update pagination controls
+function updatePaginationControls() {
+  const paginationContainer = document.getElementById("pagination-controls");
+  paginationContainer.innerHTML = ""; // Clear existing controls
+
+  // Calculate total pages
+  const totalPages = Math.ceil(restaurants.length / itemsPerPage);
+
+  // Previous button
+  const prevButton = document.createElement("button");
+  prevButton.textContent = "Previous";
+  prevButton.disabled = currentPage === 1;
+  prevButton.addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      displayRestaurants(currentPage);
+    }
+  });
+  paginationContainer.appendChild(prevButton);
+
+  // Page numbers
+  for (let i = 1; i <= totalPages; i++) {
+    const pageButton = document.createElement("button");
+    pageButton.textContent = i;
+    if (i === currentPage) {
+      pageButton.classList.add("active-page"); // Add class for active page
+    }
+    pageButton.addEventListener("click", () => {
+      currentPage = i;
+      displayRestaurants(currentPage);
+    });
+    paginationContainer.appendChild(pageButton);
+  }
+
+  // Next button
+  const nextButton = document.createElement("button");
+  nextButton.textContent = "Next";
+  nextButton.disabled = currentPage >= totalPages;
+  nextButton.addEventListener("click", () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      displayRestaurants(currentPage);
+    }
+  });
+  paginationContainer.appendChild(nextButton);
+}
+
+// Call the function with your CSV file path
+loadRestaurantsData("Data/Test File - Sheet1.csv");
+
+
 
 function renderStars(rating) {
   const fullStars = Math.floor(rating);
@@ -246,9 +353,10 @@ function applyFilters() {
   renderRestaurants(document.getElementById("search").value, selectedFilters);
 }
 
+
 function renderRestaurants(filter = "", selectedFilters = {}) {
   const container = document.getElementById("restaurants");
-  container.innerHTML = "";
+  container.innerHTML = ""; // Clear existing content
 
   let filteredRestaurants = restaurants;
 
@@ -278,24 +386,33 @@ function renderRestaurants(filter = "", selectedFilters = {}) {
     );
   }
 
+  // Render filtered cards
   filteredRestaurants.forEach((r) => {
     const card = document.createElement("div");
-    card.className = "card";
+    card.classList.add("restaurant-card"); // Ensure consistent class
     card.innerHTML = `
-      <h2>${r.name}</h2>
-      <p>${r.cuisine}</p>
-      <p>${r.address}</p>
-      <div class="rating-container">
-        ${renderStars(r.rating)} <span>${r.rating} (${formatReviews(r.reviews)} reviews)</span>
+      <div class="card-content">
+        <h2>${r.name}</h2>
+        <p><strong>Cuisine:</strong> ${r.cuisine}</p>
+        <p><strong>Address:</strong> ${r.address}</p>
+        <p><strong>Phone:</strong> ${r.phoneNumber || "N/A"}</p>
+        <p><strong>Rating:</strong> ${r.rating} ⭐</p>
+        <p><strong>Reviews:</strong> ${r.reviews}</p>
+        ${r.website ? `<p><strong>Website:</strong> <a href="${r.website}" target="_blank">${r.website}</a></p>` : "<p><strong>Website:</strong> N/A</p>"}
+        <p><strong>Price:</strong> ${"$".repeat(r.price)}</p>
+        <p><strong>Features:</strong> ${r.features.join(", ")}</p>
       </div>
     `;
+
     card.addEventListener("click", () => {
       map.setView([r.lat, r.lng], 15);
       markers[r.name].openPopup();
     });
+
     container.appendChild(card);
   });
 }
+
 
 // Get all filter elements
 const filters = {
@@ -406,10 +523,54 @@ searchButton.addEventListener('click', () => {
   filterRestaurantsByCategory(selectedCategories);
 });
 
-// Example function to filter restaurants (modify as needed)
-function filterRestaurantsByCategory(categories) {
-  console.log('Filtering restaurants by categories:', categories);
-  // Add logic here to filter and display the restaurants
+function filterRestaurants(filterCriteria) {
+  const filteredRestaurants = restaurants.filter((restaurant) => {
+    // Apply your filter logic here
+    return restaurant.cuisine.includes(filterCriteria);
+  });
+
+  displayRestaurants(filteredRestaurants);
 }
 
+const container = document.getElementById("restaurants");
+container.innerHTML = ""; // Clear previous content
 
+
+// Chat widget functionality
+const chatButton = document.getElementById('chat-button');
+const chatBox = document.getElementById('chat-box');
+const closeChat = document.getElementById('close-chat');
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const chatMessages = document.getElementById('chat-messages');
+
+chatButton.addEventListener('click', () => {
+  chatBox.classList.remove('hidden');
+  chatButton.style.display = 'none';
+});
+
+closeChat.addEventListener('click', () => {
+  chatBox.classList.add('hidden');
+  chatButton.style.display = 'block';
+});
+
+chatForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const userMessage = chatInput.value.trim();
+  if (userMessage) {
+    addMessage(userMessage, 'user');
+    chatInput.value = '';
+    // Simulate bot response
+    setTimeout(() => {
+      addMessage('Thanks for your message! How can I help?', 'bot');
+    }, 1000);
+  }
+});
+
+function addMessage(message, sender) {
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('chat-message', sender);
+  messageElement.textContent = message;
+  chatMessages.appendChild(messageElement);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
