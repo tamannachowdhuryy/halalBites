@@ -222,6 +222,11 @@ function loadRestaurantsData(csvFilePath) {
 
 
 function displayRestaurants(page, restaurantsToShow = restaurants) {
+  if (!Array.isArray(restaurantsToShow)) {
+    console.error("restaurantsToShow is not an array:", restaurantsToShow);
+    return;
+  }
+
   const container = document.getElementById("restaurants");
   container.innerHTML = ""; // Clear existing content
 
@@ -230,26 +235,38 @@ function displayRestaurants(page, restaurantsToShow = restaurants) {
 
   const currentRestaurants = restaurantsToShow.slice(startIndex, endIndex);
 
+  console.log("Displaying restaurants:", currentRestaurants);
+
   currentRestaurants.forEach((restaurant) => {
     const card = document.createElement("div");
     card.classList.add("restaurant-card");
     card.innerHTML = `
       <div class="card-content">
-        <h2>${restaurant.name}</h2>
-        <p><strong>Cuisine:</strong> ${restaurant.cuisine}</p>
-        <p><strong>Address:</strong> ${restaurant.address}</p>
+        <h2>${restaurant.name || "Unknown"}</h2>
+        <p><strong>Cuisine:</strong> ${restaurant.cuisine || "Unknown"}</p>
+        <p><strong>Address:</strong> ${restaurant.address || "Unknown"}</p>
         <p><strong>Phone:</strong> ${restaurant.phoneNumber || "N/A"}</p>
-        <p><strong>Rating:</strong> ${restaurant.rating} ⭐</p>
-        <p><strong>Reviews:</strong> ${restaurant.reviews}</p>
-        ${restaurant.website ? `<p><strong>Website:</strong> <a href="${restaurant.website}" target="_blank">${restaurant.website}</a></p>` : "<p><strong>Website:</strong> N/A</p>"}
-        <p><strong>Price:</strong> ${"$".repeat(restaurant.price)}</p>
-        <p><strong>Features:</strong> ${restaurant.features.join(", ")}</p>
+        <p><strong>Rating:</strong> ${restaurant.rating || 0} ⭐</p>
+        <p><strong>Reviews:</strong> ${restaurant.reviews || 0}</p>
+        ${
+          restaurant.website
+            ? `<p><strong>Website:</strong> <a href="${restaurant.website}" target="_blank">${restaurant.website}</a></p>`
+            : "<p><strong>Website:</strong> N/A</p>"
+        }
+        <p><strong>Price:</strong> ${"$".repeat(restaurant.price || 0)}</p>
+        <p><strong>Features:</strong> ${
+          restaurant.features?.join(", ") || "None"
+        }</p>
       </div>
     `;
 
     card.addEventListener("click", () => {
-      map.setView([restaurant.lat, restaurant.lng], 15);
-      markers[restaurant.name].openPopup();
+      if (markers[restaurant.name]) {
+        map.setView([restaurant.lat, restaurant.lng], 15);
+        markers[restaurant.name].openPopup();
+      } else {
+        console.warn(`No marker found for ${restaurant.name}`);
+      }
     });
 
     container.appendChild(card);
@@ -258,19 +275,24 @@ function displayRestaurants(page, restaurantsToShow = restaurants) {
   updatePaginationControls(restaurantsToShow);
 }
 
-
-
-// Function to add markers to the map
 function addMarkers(restaurants) {
+  if (!Array.isArray(restaurants)) {
+    console.error("Invalid restaurants array:", restaurants);
+    return;
+  }
+
   restaurants.forEach((r) => {
     if (r.lat && r.lng) {
       const marker = L.marker([r.lat, r.lng])
         .bindPopup(`<b>${r.name}</b><br>${r.cuisine}<br>${r.address}`)
         .addTo(map);
       markers[r.name] = marker; // Store marker by name
+    } else {
+      console.warn(`Invalid lat/lng for restaurant: ${r.name}`);
     }
   });
 }
+
 
 // Function to update pagination controls
 function updatePaginationControls() {
@@ -536,6 +558,10 @@ const container = document.getElementById("restaurants");
 container.innerHTML = ""; // Clear previous content
 
 
+
+
+
+// THIS IS GOING TO BE THE CHAT FEATURE
 // Chat widget functionality
 const chatButton = document.getElementById('chat-button');
 const chatBox = document.getElementById('chat-box');
