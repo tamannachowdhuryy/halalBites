@@ -6,7 +6,8 @@ import joblib
 import os
 
 # Load and preprocess the dataset
-data = pd.read_csv('/home/tamanna/Desktop/halalBites/Data/Test File - Sheet1.csv')
+DATA_PATH = os.path.join(os.path.dirname(__file__), '/home/tamanna/Desktop/halalBites/Data/Test File - Sheet1.csv')  # Adjust path
+data = pd.read_csv(DATA_PATH)
 
 data['Boroughs'] = data['Boroughs'].str.lower()
 data['Cuisine'] = data['Cuisine'].str.lower()
@@ -20,14 +21,16 @@ def train_model(data):
 
     knn = NearestNeighbors(n_neighbors=5, metric='cosine')
     knn.fit(data[['Price', 'Rating']])
-    joblib.dump(knn, './model/restaurant_recommender.pkl')
+    model_path = os.path.join(os.path.dirname(__file__), 'model', 'restaurant_recommender.pkl')
+    joblib.dump(knn, model_path)
     return knn
 
 # Check if the model exists, otherwise train and save it
-if not os.path.exists('./model/restaurant_recommender.pkl'):
+MODEL_PATH = os.path.join(os.path.dirname(__file__), 'model', 'restaurant_recommender.pkl')
+if not os.path.exists(MODEL_PATH):
     knn = train_model(data)
 else:
-    knn = joblib.load('./model/restaurant_recommender.pkl')
+    knn = joblib.load(MODEL_PATH)
 
 # Flask app
 app = Flask(__name__)
@@ -36,9 +39,9 @@ app = Flask(__name__)
 def recommend():
     user_input = request.json
 
-    borough = user_input.get('borough', None)
-    cuisine = user_input.get('cuisine', None)
-    zip_code = user_input.get('zip_code', None)
+    borough = user_input.get('borough', '').lower()
+    cuisine = user_input.get('cuisine', '').lower()
+    zip_code = user_input.get('zip_code', '')
     price = user_input.get('price', None)
 
     filtered_data = data
@@ -47,10 +50,10 @@ def recommend():
         filtered_data = filtered_data[filtered_data['Boroughs'] == borough]
 
     if cuisine:
-        filtered_data = filtered_data[filtered_data['Cuisine'].str.contains(cuisine)]
+        filtered_data = filtered_data[filtered_data['Cuisine'].str.contains(cuisine, na=False)]
 
     if zip_code:
-        filtered_data = filtered_data[filtered_data['Address'].str.contains(zip_code)]
+        filtered_data = filtered_data[filtered_data['Address'].str.contains(zip_code, na=False)]
 
     if price:
         filtered_data = filtered_data[filtered_data['Price'] <= price]
