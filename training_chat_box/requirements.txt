@@ -160,3 +160,8 @@ xlrd==1.2.0
 yt-dlp==2022.4.8
 zipp==1.0.0
 zope.interface==6.4.post2
+Flask
+pandas
+scikit-learn
+joblib
+gunicorn
