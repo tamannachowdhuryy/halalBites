@@ -2,12 +2,13 @@ from flask import Flask, request, jsonify
 import pandas as pd
 from flask_cors import CORS
 from fuzzywuzzy import process
+import os
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for communication with the frontend
 
 # Load restaurant data
-data = pd.read_csv('/home/tamanna/Desktop/halalBites/Data/enriched_restaurants.csv')
+data = pd.read_csv('../Data/enriched_restaurants.csv')
 data['Boroughs'] = data['Boroughs'].str.lower()
 data['Neighborhood'] = data['Neighborhood'].fillna("").str.lower()  # Ensure Neighborhood column exists
 data['Cuisine'] = data['Cuisine'].fillna("").str.lower()
@@ -16,7 +17,7 @@ data['Rating'] = data['Rating'].fillna(data['Rating'].mean())
 data['Address'] = data['Address'].fillna("")  # Replace NaN with an empty string for addresses
 
 # Load emotion-food mapping
-emotion_food_mapping = pd.read_csv('/home/tamanna/Desktop/halalBites/Data/emotion_food_mapping.csv')
+emotion_food_mapping = pd.read_csv('../Data/emotion_food_mapping.csv')
 
 def match_cuisine(cuisine_list, suggested_foods):
     """Match cuisines based on suggested foods using fuzzy matching."""
@@ -119,4 +120,5 @@ def recommend():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))  # Use Railway's $PORT variable or default to 5000
+    app.run(debug=True, host='0.0.0.0', port=port)
