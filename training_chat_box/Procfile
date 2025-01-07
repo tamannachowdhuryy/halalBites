@@ -1,2 +1,2 @@
-web: gunicorn Data.app:app --bind 0.0.0.0:$PORT
+web: gunicorn training_chat_box.app:app --bind 0.0.0.0:$PORT
 

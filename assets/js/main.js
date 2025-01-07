@@ -191,7 +191,7 @@ function loadRestaurantsData(csvFilePath) {
       const parsedData = Papa.parse(csvData, { header: true });
       restaurants = parsedData.data.map((restaurant) => ({
         name: restaurant.Name,
-        borough: restaurant.Boroughs, // Add Boroughs column
+        borough: restaurant.Boroughs?.toLowerCase(), // Ensure borough is normalized
         cuisine: restaurant.Cuisine,
         address: restaurant.Address,
         phoneNumber: restaurant["Phone Number"],
@@ -205,10 +205,16 @@ function loadRestaurantsData(csvFilePath) {
         lng: parseFloat(restaurant.Lng),
       }));
 
-      // Get the current borough based on the file name
-      const currentPage = window.location.pathname.split("/").pop().replace(".html", "");
-      const filteredRestaurants = restaurants.filter((r) =>
-        r.borough?.toLowerCase() === currentPage.toLowerCase()
+      // Determine the current borough from the page filename
+      const currentBorough = window.location.pathname
+        .split("/")
+        .pop()
+        .replace(".html", "")
+        .toLowerCase();
+
+      // Filter restaurants for the current borough
+      const filteredRestaurants = restaurants.filter(
+        (r) => r.borough === currentBorough
       );
 
       // Display the first page of filtered restaurants
@@ -221,7 +227,7 @@ function loadRestaurantsData(csvFilePath) {
 }
 
 
-function displayRestaurants(page, restaurantsToShow = restaurants) {
+function displayRestaurants(page, restaurantsToShow) {
   if (!Array.isArray(restaurantsToShow)) {
     console.error("restaurantsToShow is not an array:", restaurantsToShow);
     return;
@@ -234,8 +240,6 @@ function displayRestaurants(page, restaurantsToShow = restaurants) {
   const endIndex = startIndex + itemsPerPage;
 
   const currentRestaurants = restaurantsToShow.slice(startIndex, endIndex);
-
-  console.log("Displaying restaurants:", currentRestaurants);
 
   currentRestaurants.forEach((restaurant) => {
     const card = document.createElement("div");
@@ -293,49 +297,43 @@ function addMarkers(restaurants) {
   });
 }
 
-
-// Function to update pagination controls
-function updatePaginationControls() {
+function updatePaginationControls(restaurantsToShow) {
   const paginationContainer = document.getElementById("pagination-controls");
   paginationContainer.innerHTML = ""; // Clear existing controls
 
-  // Calculate total pages
-  const totalPages = Math.ceil(restaurants.length / itemsPerPage);
+  const totalPages = Math.ceil(restaurantsToShow.length / itemsPerPage);
 
-  // Previous button
   const prevButton = document.createElement("button");
   prevButton.textContent = "Previous";
   prevButton.disabled = currentPage === 1;
   prevButton.addEventListener("click", () => {
     if (currentPage > 1) {
       currentPage--;
-      displayRestaurants(currentPage);
+      displayRestaurants(currentPage, restaurantsToShow);
     }
   });
   paginationContainer.appendChild(prevButton);
 
-  // Page numbers
   for (let i = 1; i <= totalPages; i++) {
     const pageButton = document.createElement("button");
     pageButton.textContent = i;
     if (i === currentPage) {
-      pageButton.classList.add("active-page"); // Add class for active page
+      pageButton.classList.add("active-page");
     }
     pageButton.addEventListener("click", () => {
       currentPage = i;
-      displayRestaurants(currentPage);
+      displayRestaurants(currentPage, restaurantsToShow);
     });
     paginationContainer.appendChild(pageButton);
   }
 
-  // Next button
   const nextButton = document.createElement("button");
   nextButton.textContent = "Next";
   nextButton.disabled = currentPage >= totalPages;
   nextButton.addEventListener("click", () => {
     if (currentPage < totalPages) {
       currentPage++;
-      displayRestaurants(currentPage);
+      displayRestaurants(currentPage, restaurantsToShow);
     }
   });
   paginationContainer.appendChild(nextButton);
@@ -570,29 +568,128 @@ const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const chatMessages = document.getElementById('chat-messages');
 
-chatButton.addEventListener('click', () => {
-  chatBox.classList.remove('hidden');
-  chatButton.style.display = 'none';
-});
+// Survey state
+let surveyState = {
+  mood: null,
+  craving: null,
+  suggestedFoods: null, // Dynamic suggestions
+  neighborhood: null,
+  price: null,
+};
 
-closeChat.addEventListener('click', () => {
-  chatBox.classList.add('hidden');
-  chatButton.style.display = 'block';
-});
+let currentStep = 0; // Step in the conversation flow
+const initialQuestions = [
+  "Hi! How are you feeling today?",
+  "What kind of food are you craving right now? (e.g., comfort food, chicken, desserts)",
+  "Which borough or neighborhood are you in? (e.g., Queens, Jackson Heights)",
+  "What’s your price range? (Enter a number from 1 to 4, where 1 is inexpensive and 4 is luxury)",
+];
 
+// Function to handle dynamic conversation flow
+function askNextQuestion() {
+  if (currentStep < initialQuestions.length) {
+    addMessage(initialQuestions[currentStep], 'bot');
+  } else {
+    sendSurveyData(); // After all steps, send data to backend
+  }
+}
+
+// Function to dynamically suggest foods based on mood
+function suggestFoodsBasedOnMood(mood) {
+  const moodToFood = {
+    sad: ["ice cream", "chocolate", "pizza", "fried chicken"],
+    stressed: ["coffee", "tea", "soup"],
+    happy: ["desserts", "cakes", "smoothies"],
+    angry: ["spicy food", "burgers"],
+    bored: ["snacks", "popcorn", "chips"],
+  };
+
+  surveyState.suggestedFoods = moodToFood[mood] || ["comfort food"];
+  const options = surveyState.suggestedFoods.join(", ");
+  addMessage(`Would you like something like ${options}?`, 'bot');
+}
+
+// Function to store user answers and dynamically update the flow
+function storeAnswer(answer) {
+  switch (currentStep) {
+    case 0:
+      surveyState.mood = answer.toLowerCase();
+      suggestFoodsBasedOnMood(surveyState.mood); // Dynamically suggest foods based on mood
+      currentStep++;
+      return; // Pause here for user input
+    case 1:
+      surveyState.craving = answer.toLowerCase();
+      break;
+    case 2:
+      surveyState.neighborhood = answer.toLowerCase();
+      break;
+    case 3:
+      surveyState.price = parseInt(answer, 10);
+      break;
+  }
+
+  currentStep++;
+  askNextQuestion();
+}
+
+// Function to send survey data to the Flask backend
+async function sendSurveyData() {
+  try {
+    const response = await fetch('http://127.0.0.1:5000/recommend', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(surveyState),
+    });
+
+    if (response.ok) {
+      const responseData = await response.json();
+
+      if (responseData.response && responseData.response.length > 0) {
+        responseData.response.forEach((rec) => {
+          addMessage(rec, 'bot');
+        });
+        addMessage("Would you like to search for something else? Type 'yes' to continue or 'exit' to leave.", 'bot');
+      } else {
+        addMessage(responseData.message, 'bot'); // Display the backend's message
+        addMessage("Feel free to tell me more about what you're looking for.", 'bot');
+      }
+    } else {
+      addMessage('There was an error fetching recommendations. Please try again later.', 'bot');
+      console.error('Server response:', response.status, await response.text());
+    }
+  } catch (error) {
+    console.error('Fetch error:', error);
+    addMessage('Unable to connect to the recommendation service.', 'bot');
+  }
+}
+
+// Handle chat form submission
 chatForm.addEventListener('submit', (event) => {
   event.preventDefault();
   const userMessage = chatInput.value.trim();
   if (userMessage) {
-    addMessage(userMessage, 'user');
+    addMessage(userMessage, 'user'); // Add user message to chat
     chatInput.value = '';
-    // Simulate bot response
-    setTimeout(() => {
-      addMessage('Thanks for your message! How can I help?', 'bot');
-    }, 1000);
+
+    if (userMessage.toLowerCase() === 'exit') {
+      addMessage("Thanks for chatting! Have a great day!", 'bot');
+      currentStep = -1; // End conversation
+      return;
+    }
+
+    if (currentStep === 0) {
+      storeAnswer(userMessage); // Capture mood and dynamically suggest
+    } else if (currentStep > 0 && currentStep < initialQuestions.length) {
+      storeAnswer(userMessage);
+    } else {
+      askNextQuestion();
+    }
   }
 });
 
+// Function to add a message to the chat
 function addMessage(message, sender) {
   const messageElement = document.createElement('div');
   messageElement.classList.add('chat-message', sender);
@@ -600,3 +697,127 @@ function addMessage(message, sender) {
   chatMessages.appendChild(messageElement);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
+
+// Show chat box
+chatButton.addEventListener('click', () => {
+  chatBox.classList.remove('hidden');
+  chatButton.style.display = 'none';
+  currentStep = 0; // Reset conversation flow
+  askNextQuestion(); // Start survey when chat opens
+});
+
+// Hide chat box
+closeChat.addEventListener('click', () => {
+  chatBox.classList.add('hidden');
+  chatButton.style.display = 'block';
+});
+
+
+const userId = "user123";
+async function sendMessage(message) {
+  try {
+    const response = await fetch("http://localhost:5000/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId, message }),
+    });
+
+    if (!response.ok) {
+      console.error("Error:", response.statusText);
+      addMessage("Unable to connect to the recommendation service.", "bot");
+      return;
+    }
+
+    const data = await response.json();
+    addMessage(data.response, "bot");
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    addMessage("Unable to connect to the recommendation service.", "bot");
+  }
+}
+
+async function getRecommendation(data) {
+  try {
+    const response = await fetch("http://localhost:5000/recommend", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      console.error("Error:", response.statusText);
+      return { message: "Unable to connect to the recommendation service." };
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Fetch error:", error);
+    return { message: "Unable to connect to the recommendation service." };
+  }
+}
+
+// Extract search query from URL
+document.addEventListener("DOMContentLoaded", () => {
+  const searchButton = document.getElementById("index-search-button");
+
+  searchButton.addEventListener("click", () => {
+    const query = document.getElementById("index-search").value.trim().toLowerCase();
+    if (!query) {
+      alert("Please enter a search term!");
+      return;
+    }
+
+    console.log("Search Query Entered:", query);
+
+    // Parse the CSV to find the borough of the searched restaurant
+    Papa.parse("Data/enriched_restaurants.csv", {
+      download: true,
+      header: true,
+      complete: (results) => {
+        console.log("Parsed CSV Data:", results.data);
+
+        const restaurants = results.data.map((restaurant) => ({
+          name: restaurant.Name.trim().toLowerCase(),
+          borough: restaurant.Borough.trim().toLowerCase(),
+        }));
+
+        const match = restaurants.find((restaurant) =>
+          restaurant.name.includes(query)
+        );
+
+        if (match) {
+          console.log("Match Found:", match);
+          const boroughPage = `${match.borough}.html?search=${encodeURIComponent(query)}`;
+          console.log("Redirecting to:", boroughPage);
+          window.location.href = boroughPage; // Redirect to the correct borough page
+        } else {
+          alert("No matching restaurant found.");
+        }
+      },
+      error: (error) => console.error("Error loading CSV:", error),
+    });
+  });
+});
+document.addEventListener("DOMContentLoaded", () => {
+  const query = new URLSearchParams(window.location.search).get("search");
+  console.log("Search Query from URL:", query);
+
+  if (!query) return;
+
+  const cards = Array.from(document.querySelectorAll(".restaurant-card"));
+
+  const matchingCard = cards.find((card) =>
+    card.querySelector("h2").textContent.toLowerCase().includes(query)
+  );
+
+  if (matchingCard) {
+    console.log("Match Found:", matchingCard);
+    matchingCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    matchingCard.classList.add("highlight");
+    setTimeout(() => matchingCard.classList.remove("highlight"), 2000); // Remove highlight after 2 seconds
+  } else {
+    console.warn("No matching card found.");
+  }
+});
