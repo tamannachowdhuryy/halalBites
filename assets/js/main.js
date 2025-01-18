@@ -180,7 +180,7 @@
 const map = L.map("map").setView([40.7489, -73.8927], 12);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 const markers = {}; // Store markers globally
-//let restaurants = []; // Declare globally
+let restaurants = []; // Declare restaurants globally
 let currentPage = 1; // Current page
 const itemsPerPage = 4; // Number of items per page
 
@@ -189,8 +189,6 @@ function loadRestaurantsData(csvFilePath) {
     .then((response) => response.text())
     .then((csvData) => {
       const parsedData = Papa.parse(csvData, { header: true });
-
-      // Populate the global restaurants variable
       restaurants = parsedData.data.map((restaurant) => ({
         name: restaurant.Name,
         borough: restaurant.Boroughs?.toLowerCase(), // Ensure borough is normalized
@@ -228,8 +226,13 @@ function loadRestaurantsData(csvFilePath) {
     .catch((error) => console.error("Error loading CSV:", error));
 }
 
-// Function to display restaurants (unchanged)
+
 function displayRestaurants(page, restaurantsToShow) {
+  if (!Array.isArray(restaurantsToShow)) {
+    console.error("restaurantsToShow is not an array:", restaurantsToShow);
+    return;
+  }
+
   const container = document.getElementById("restaurants");
   container.innerHTML = ""; // Clear existing content
 
@@ -237,11 +240,6 @@ function displayRestaurants(page, restaurantsToShow) {
   const endIndex = startIndex + itemsPerPage;
 
   const currentRestaurants = restaurantsToShow.slice(startIndex, endIndex);
-
-  if (currentRestaurants.length === 0) {
-    container.innerHTML = "<p>No matching restaurants found.</p>";
-    return;
-  }
 
   currentRestaurants.forEach((restaurant) => {
     const card = document.createElement("div");
@@ -266,17 +264,12 @@ function displayRestaurants(page, restaurantsToShow) {
       </div>
     `;
 
-    // Attach click event to the card
     card.addEventListener("click", () => {
-      if (map && restaurant.lat && restaurant.lng) {
-        map.setView([restaurant.lat, restaurant.lng], 15); // Zoom to marker location
-        if (markers[restaurant.name]) {
-          markers[restaurant.name].openPopup(); // Show popup for the marker
-        } else {
-          console.error("Marker not found for restaurant:", restaurant.name);
-        }
+      if (markers[restaurant.name]) {
+        map.setView([restaurant.lat, restaurant.lng], 15);
+        markers[restaurant.name].openPopup();
       } else {
-        console.error("Map or marker data is missing.");
+        console.warn(`No marker found for ${restaurant.name}`);
       }
     });
 
@@ -286,8 +279,6 @@ function displayRestaurants(page, restaurantsToShow) {
   updatePaginationControls(restaurantsToShow);
 }
 
-
-// Function to add markers to the map (unchanged)
 function addMarkers(restaurants) {
   if (!Array.isArray(restaurants)) {
     console.error("Invalid restaurants array:", restaurants);
@@ -306,8 +297,6 @@ function addMarkers(restaurants) {
   });
 }
 
-
-// Function to update pagination controls (unchanged)
 function updatePaginationControls(restaurantsToShow) {
   const paginationContainer = document.getElementById("pagination-controls");
   paginationContainer.innerHTML = ""; // Clear existing controls
@@ -349,7 +338,6 @@ function updatePaginationControls(restaurantsToShow) {
   });
   paginationContainer.appendChild(nextButton);
 }
-
 
 // Call the function with your CSV file path
 loadRestaurantsData("Data/Test File - Sheet1.csv");
@@ -569,143 +557,149 @@ container.innerHTML = ""; // Clear previous content
 
 
 
-// Chat widget functionality
-// Chat widget functionality
-const chatButton = document.getElementById("chat-button");
-const chatBox = document.getElementById("chat-box");
-const closeChat = document.getElementById("close-chat");
-const chatForm = document.getElementById("chat-form");
-const chatInput = document.getElementById("chat-input");
-const chatMessages = document.getElementById("chat-messages");
 
-// Survey state
-let surveyState = {
-  mood: null,
-  craving: null,
-  suggestedFoods: null,
-  neighborhood: null,
-  price: null,
-};
+document.addEventListener("DOMContentLoaded", () => {
+  // --- Chat Feature ---
+  const ChatFeature = (() => {
+    const chatButton = document.getElementById("chat-button");
+    const chatBox = document.getElementById("chat-box");
+    const closeChat = document.getElementById("close-chat");
+    const chatForm = document.getElementById("chat-form");
+    const chatInput = document.getElementById("chat-input");
+    const chatMessages = document.getElementById("chat-messages");
 
-let currentStep = 0;
-const initialQuestions = [
-  "Hi! How are you feeling today?",
-  "What kind of food are you craving right now? (e.g., comfort food, chicken, desserts)",
-  "Which borough or neighborhood are you in? (e.g., Queens, Jackson Heights)",
-  "What’s your price range? (Enter a number from 1 to 4, where 1 is inexpensive and 4 is luxury)",
-];
-
-// Show chat box
-chatButton.addEventListener("click", () => {
-  console.log("Opening chat...");
-  chatBox.classList.remove("hidden");
-  chatButton.style.display = "none";
-  currentStep = 0;
-  askNextQuestion();
-});
-
-// Hide chat box
-closeChat.addEventListener("click", () => {
-  console.log("Closing chat...");
-  chatBox.classList.add("hidden");
-  chatButton.style.display = "block";
-});
-
-// Handle dynamic conversation flow
-function askNextQuestion() {
-  if (currentStep < initialQuestions.length) {
-    addMessage(initialQuestions[currentStep], "bot");
-  } else {
-    sendSurveyData();
-  }
-}
-
-function addMessage(message, sender) {
-  const messageElement = document.createElement("div");
-  messageElement.classList.add("chat-message", sender);
-  messageElement.textContent = message;
-  chatMessages.appendChild(messageElement);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// Handle user input
-chatForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const userMessage = chatInput.value.trim();
-  if (!userMessage) return;
-
-  addMessage(userMessage, "user");
-  chatInput.value = "";
-
-  if (userMessage.toLowerCase() === "exit") {
-    addMessage("Thanks for chatting! Have a great day!", "bot");
-    currentStep = -1;
-    return;
-  }
-
-  if (currentStep === 0) {
-    storeAnswer(userMessage);
-  } else if (currentStep > 0 && currentStep < initialQuestions.length) {
-    storeAnswer(userMessage);
-  } else {
-    askNextQuestion();
-  }
-});
-
-function storeAnswer(answer) {
-  switch (currentStep) {
-    case 0:
-      surveyState.mood = answer.toLowerCase();
-      suggestFoodsBasedOnMood(surveyState.mood);
-      currentStep++;
+    if (!chatButton || !chatBox || !closeChat || !chatForm || !chatInput || !chatMessages) {
+      console.error("Chat elements are missing from the DOM");
       return;
-    case 1:
-      surveyState.craving = answer.toLowerCase();
-      break;
-    case 2:
-      surveyState.neighborhood = answer.toLowerCase();
-      break;
-    case 3:
-      surveyState.price = parseInt(answer, 10);
-      break;
-  }
-  currentStep++;
-  askNextQuestion();
-}
+    }
 
-function suggestFoodsBasedOnMood(mood) {
-  const moodToFood = {
-    sad: ["ice cream", "chocolate", "pizza", "fried chicken"],
-    stressed: ["coffee", "tea", "soup"],
-    happy: ["desserts", "cakes", "smoothies"],
-    angry: ["spicy food", "burgers"],
-    bored: ["snacks", "popcorn", "chips"],
-  };
-  surveyState.suggestedFoods = moodToFood[mood] || ["comfort food"];
-  const options = surveyState.suggestedFoods.join(", ");
-  addMessage(`Would you like something like ${options}?`, "bot");
-}
+    let surveyState = {
+      mood: null,
+      craving: null,
+      suggestedFoods: null,
+      neighborhood: null,
+      price: null,
+    };
+    let currentStep = 0;
 
-async function sendSurveyData() {
-  try {
-    const response = await fetch("http://127.0.0.1:5000/recommend", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(surveyState),
+    const initialQuestions = [
+      "Hi! How are you feeling today?",
+      "What kind of food are you craving right now? (e.g., comfort food, chicken, desserts)",
+      "Which borough or neighborhood are you in? (e.g., Queens, Jackson Heights)",
+      "What’s your price range? (Enter a number from 1 to 4, where 1 is inexpensive and 4 is luxury)",
+    ];
+
+    const addMessage = (message, sender) => {
+      const messageElement = document.createElement("div");
+      messageElement.classList.add("chat-message", sender);
+      messageElement.textContent = message;
+      chatMessages.appendChild(messageElement);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    };
+
+    const askNextQuestion = () => {
+      if (currentStep < initialQuestions.length) {
+        addMessage(initialQuestions[currentStep], "bot");
+      } else {
+        sendSurveyData();
+      }
+    };
+
+    const suggestFoodsBasedOnMood = (mood) => {
+      const moodToFood = {
+        sad: ["ice cream", "chocolate", "pizza", "fried chicken"],
+        stressed: ["coffee", "tea", "soup"],
+        happy: ["desserts", "cakes", "smoothies"],
+        angry: ["spicy food", "burgers"],
+        bored: ["snacks", "popcorn", "chips"],
+      };
+      surveyState.suggestedFoods = moodToFood[mood] || ["comfort food"];
+      const options = surveyState.suggestedFoods.join(", ");
+      addMessage(`Would you like something like ${options}?`, "bot");
+    };
+
+    const storeAnswer = (answer) => {
+      switch (currentStep) {
+        case 0:
+          surveyState.mood = answer.toLowerCase();
+          suggestFoodsBasedOnMood(surveyState.mood);
+          currentStep++;
+          return;
+        case 1:
+          surveyState.craving = answer.toLowerCase();
+          break;
+        case 2:
+          surveyState.neighborhood = answer.toLowerCase();
+          break;
+        case 3:
+          surveyState.price = parseInt(answer, 10);
+          break;
+      }
+      currentStep++;
+      askNextQuestion();
+    };
+
+    const sendSurveyData = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:5000/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(surveyState),
+        });
+
+        if (response.ok) {
+          const responseData = await response.json();
+          if (responseData.response && responseData.response.length > 0) {
+            responseData.response.forEach((rec) => addMessage(rec, "bot"));
+          } else {
+            addMessage(responseData.message || "No recommendations found.", "bot");
+          }
+        } else {
+          addMessage("Error fetching recommendations. Try again later.", "bot");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        addMessage("Unable to connect to the recommendation service.", "bot");
+      }
+    };
+
+    chatButton.addEventListener("click", () => {
+      chatBox.classList.remove("hidden");
+      chatButton.style.display = "none";
+      currentStep = 0;
+      askNextQuestion();
     });
 
-    if (response.ok) {
-      const responseData = await response.json();
-      if (responseData.response && responseData.response.length > 0) {
-        responseData.response.forEach((rec) => addMessage(rec, "bot"));
-      } else {
-        addMessage(responseData.message || "No recommendations found.", "bot");
+    closeChat.addEventListener("click", () => {
+      chatBox.classList.add("hidden");
+      chatButton.style.display = "block";
+    });
+
+    chatForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const userMessage = chatInput.value.trim();
+      if (!userMessage) return;
+
+      addMessage(userMessage, "user");
+      chatInput.value = "";
+
+      if (userMessage.toLowerCase() === "exit") {
+        addMessage("Thanks for chatting! Have a great day!", "bot");
+        currentStep = -1;
+        return;
       }
-    } else {
-      addMessage("Error fetching recommendations. Try again later.", "bot");
-    }
-  } catch (error) {
-    console.error(error);
-    addMessage("Unable to connect to the recommendation service.", "bot");
-  }
-}
+
+      if (currentStep === 0) {
+        storeAnswer(userMessage);
+      } else if (currentStep > 0 && currentStep < initialQuestions.length) {
+        storeAnswer(userMessage);
+      } else {
+        askNextQuestion();
+      }
+    });
+  })();
+
+
+  })();
+
+  

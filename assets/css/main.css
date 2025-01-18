@@ -10,6 +10,7 @@
 # Font & Color Variables
 # Help: https://bootstrapmade.com/color-system/
 --------------------------------------------------------------*/
+
 /* Fonts */
 :root {
   --default-font: "Roboto",  system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -424,6 +425,7 @@ h6 {
   }
 }
 
+
 /* Mobile Navigation */
 @media (max-width: 1199px) {
   .mobile-nav-toggle {
@@ -549,6 +551,7 @@ h6 {
     display: block;
   }
 }
+
 
 /*--------------------------------------------------------------
 # Global Footer
@@ -1796,6 +1799,7 @@ section,
 
 
 /* Borough */
+
 .layout {
   display: grid;
   grid-template-columns: 300px 1fr 1fr; /* Sidebar, Map, and List */
@@ -2251,4 +2255,15 @@ input::placeholder {
 
 .restaurants-container {
   position: relative;
+}
+
+@media (max-width: 768px) {
+  .search-container {
+    flex-direction: column;
+  }
+
+  #search-button {
+    margin-top: 10px;
+    width: 100%;
+  }
 }
