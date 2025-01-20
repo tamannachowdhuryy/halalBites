@@ -190,32 +190,33 @@ function loadRestaurantsData(csvFilePath) {
     .then((csvData) => {
       const parsedData = Papa.parse(csvData, { header: true });
       restaurants = parsedData.data.map((restaurant) => ({
-        name: restaurant.Name,
-        borough: restaurant.Boroughs?.toLowerCase(), // Ensure borough is normalized
-        cuisine: restaurant.Cuisine,
-        address: restaurant.Address,
-        phoneNumber: restaurant["Phone Number"],
-        website: restaurant.Website,
-        rating: parseFloat(restaurant.Rating),
-        reviews: parseInt(restaurant.Reviews, 10),
-        price: parseInt(restaurant.Price, 10),
-        category: restaurant.Category.split(",").map((c) => c.trim()),
-        features: restaurant.Features.split(",").map((f) => f.trim()),
-        lat: parseFloat(restaurant.Lat),
-        lng: parseFloat(restaurant.Lng),
+        name: restaurant.Name || "Unknown",
+        borough: restaurant.Boroughs?.trim().toLowerCase() || "unknown", // Normalize borough
+        cuisine: restaurant.Cuisine || "Unknown",
+        address: restaurant.Address || "Unknown",
+        phoneNumber: restaurant["Phone Number"] || "N/A",
+        website: restaurant.Website || null,
+        rating: parseFloat(restaurant.Rating) || 0,
+        reviews: parseInt(restaurant.Reviews, 10) || 0,
+        price: parseInt(restaurant.Price, 10) || 0,
+        category: (restaurant.Category || "").split(",").map((c) => c.trim()),
+        features: (restaurant.Features || "").split(",").map((f) => f.trim()),
+        lat: parseFloat(restaurant.Lat) || null,
+        lng: parseFloat(restaurant.Lng) || null,
+        link: restaurant.Link || null,
       }));
-
       // Determine the current borough from the page filename
       const currentBorough = window.location.pathname
         .split("/")
         .pop()
         .replace(".html", "")
+        .replace("-", " ") // Replace hyphens with spaces
         .toLowerCase();
 
-      // Filter restaurants for the current borough
       const filteredRestaurants = restaurants.filter(
-        (r) => r.borough === currentBorough
+        (r) => r.borough.trim().toLowerCase() === currentBorough
       );
+
 
       // Display the first page of filtered restaurants
       displayRestaurants(1, filteredRestaurants);
@@ -228,19 +229,34 @@ function loadRestaurantsData(csvFilePath) {
 
 
 function displayRestaurants(page, restaurantsToShow) {
+  // Validate input
   if (!Array.isArray(restaurantsToShow)) {
     console.error("restaurantsToShow is not an array:", restaurantsToShow);
     return;
   }
 
   const container = document.getElementById("restaurants");
+
+  // Ensure container exists
+  if (!container) {
+    console.error("Element with id 'restaurants' not found in DOM.");
+    return;
+  }
+
   container.innerHTML = ""; // Clear existing content
 
   const startIndex = (page - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
 
+  // Slice restaurants for current page
   const currentRestaurants = restaurantsToShow.slice(startIndex, endIndex);
 
+  if (currentRestaurants.length === 0) {
+    container.innerHTML = "<p>No restaurants found for this page.</p>";
+    return;
+  }
+
+  // Generate restaurant cards
   currentRestaurants.forEach((restaurant) => {
     const card = document.createElement("div");
     card.classList.add("restaurant-card");
@@ -261,9 +277,15 @@ function displayRestaurants(page, restaurantsToShow) {
         <p><strong>Features:</strong> ${
           restaurant.features?.join(", ") || "None"
         }</p>
+        ${
+          restaurant.link
+            ? `<p><strong>Location Link:</strong> <a href="${restaurant.link}" target="_blank">View on Map</a></p>`
+            : "<p><strong>Location Link:</strong> N/A</p>"
+        }
       </div>
     `;
 
+    // Add click event to focus on marker
     card.addEventListener("click", () => {
       if (markers[restaurant.name]) {
         map.setView([restaurant.lat, restaurant.lng], 15);
@@ -276,8 +298,10 @@ function displayRestaurants(page, restaurantsToShow) {
     container.appendChild(card);
   });
 
+  // Update pagination controls
   updatePaginationControls(restaurantsToShow);
 }
+
 
 function addMarkers(restaurants) {
   if (!Array.isArray(restaurants)) {
@@ -302,9 +326,12 @@ function updatePaginationControls(restaurantsToShow) {
   paginationContainer.innerHTML = ""; // Clear existing controls
 
   const totalPages = Math.ceil(restaurantsToShow.length / itemsPerPage);
-
+  const visiblePages = 5; // Number of page buttons to show
+  
+  // Create Previous button
   const prevButton = document.createElement("button");
   prevButton.textContent = "Previous";
+  prevButton.className = "pagination-btn prev";
   prevButton.disabled = currentPage === 1;
   prevButton.addEventListener("click", () => {
     if (currentPage > 1) {
@@ -314,21 +341,40 @@ function updatePaginationControls(restaurantsToShow) {
   });
   paginationContainer.appendChild(prevButton);
 
-  for (let i = 1; i <= totalPages; i++) {
-    const pageButton = document.createElement("button");
-    pageButton.textContent = i;
-    if (i === currentPage) {
-      pageButton.classList.add("active-page");
-    }
-    pageButton.addEventListener("click", () => {
-      currentPage = i;
-      displayRestaurants(currentPage, restaurantsToShow);
-    });
-    paginationContainer.appendChild(pageButton);
+  // Calculate range of pages to show
+  let startPage = Math.max(1, currentPage - Math.floor(visiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + visiblePages - 1);
+
+  // Adjust start if we're near the end
+  if (endPage - startPage + 1 < visiblePages) {
+    startPage = Math.max(1, endPage - visiblePages + 1);
   }
 
+  // Add first page if needed
+  if (startPage > 1) {
+    addPageButton(1);
+    if (startPage > 2) {
+      addEllipsis();
+    }
+  }
+
+  // Add visible page buttons
+  for (let i = startPage; i <= endPage; i++) {
+    addPageButton(i);
+  }
+
+  // Add last page if needed
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      addEllipsis();
+    }
+    addPageButton(totalPages);
+  }
+
+  // Create Next button
   const nextButton = document.createElement("button");
   nextButton.textContent = "Next";
+  nextButton.className = "pagination-btn next";
   nextButton.disabled = currentPage >= totalPages;
   nextButton.addEventListener("click", () => {
     if (currentPage < totalPages) {
@@ -337,10 +383,33 @@ function updatePaginationControls(restaurantsToShow) {
     }
   });
   paginationContainer.appendChild(nextButton);
+
+  // Helper function to add page button
+  function addPageButton(pageNum) {
+    const pageButton = document.createElement("button");
+    pageButton.textContent = pageNum;
+    pageButton.className = "pagination-btn page";
+    if (pageNum === currentPage) {
+      pageButton.classList.add("active-page");
+    }
+    pageButton.addEventListener("click", () => {
+      currentPage = pageNum;
+      displayRestaurants(currentPage, restaurantsToShow);
+    });
+    paginationContainer.appendChild(pageButton);
+  }
+
+  // Helper function to add ellipsis
+  function addEllipsis() {
+    const ellipsis = document.createElement("span");
+    ellipsis.textContent = "...";
+    ellipsis.className = "pagination-ellipsis";
+    paginationContainer.appendChild(ellipsis);
+  }
 }
 
 // Call the function with your CSV file path
-loadRestaurantsData("Data/Test File - Sheet1.csv");
+loadRestaurantsData("Data/neb.csv");
 
 
 

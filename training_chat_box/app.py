@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for communication with the frontend
 
 # Load restaurant data
-data = pd.read_csv('/home/tamanna/Desktop/halalBites/Data/enriched_restaurants.csv')
+data = pd.read_csv('/home/tamanna/Desktop/halalBites/Data/neb.csv')
 data['Boroughs'] = data['Boroughs'].str.lower()
 data['Neighborhood'] = data['Neighborhood'].fillna("").str.lower()  # Ensure Neighborhood column exists
 data['Cuisine'] = data['Cuisine'].fillna("").str.lower()
