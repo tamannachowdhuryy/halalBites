@@ -771,4 +771,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
   })();
 
-  
+// Request Location Access
+function requestLocationAccess() {
+  if ('geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        userLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        // Center map and add marker
+        map.setView([userLocation.lat, userLocation.lng], 13);
+        L.marker([userLocation.lat, userLocation.lng], {
+          icon: L.divIcon({
+            className: 'user-location-marker',
+            html: '📍',
+            iconSize: [25, 25],
+          }),
+        }).addTo(map);
+
+        // Enable distance filters
+        document.querySelectorAll('input[name="distance"]').forEach((input) => {
+          input.disabled = false;
+        });
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        alert('Unable to access your location. Distance-based filtering will be disabled.');
+      }
+    );
+  } else {
+    alert('Geolocation is not supported by your browser.');
+  }
+}
+
+// Calculate Distance (Haversine Formula)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) ** 2 +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distance in meters
+}
+
+// Initialize on Page Load
+document.addEventListener('DOMContentLoaded', () => {
+  initializeFilters();
+  requestLocationAccess();
+});
+
+
+
+
