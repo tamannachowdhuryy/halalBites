@@ -1,16 +1,3 @@
-/**
-* Template Name: Yummy
-* Template URL: https://bootstrapmade.com/yummy-bootstrap-restaurant-website-template/
-* Updated: Aug 07 2024 with Bootstrap v5.3.3
-* Author: BootstrapMade.com
-* License: https://bootstrapmade.com/license/
-*/
-
-/*--------------------------------------------------------------
-# Font & Color Variables
-# Help: https://bootstrapmade.com/color-system/
---------------------------------------------------------------*/
-
 /* Fonts */
 :root {
   --default-font: "Roboto",  system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -369,19 +356,16 @@ h6 {
   }
 
   .navmenu .dropdown ul {
-    margin: 0;
-    padding: 10px 0;
-    background: var(--nav-dropdown-background-color);
-    display: block;
+    display: none; /* Hidden by default */
     position: absolute;
-    visibility: hidden;
-    left: 14px;
-    top: 130%;
-    opacity: 0;
-    transition: 0.3s;
-    border-radius: 4px;
-    z-index: 99;
-    box-shadow: 0px 0px 30px rgba(0, 0, 0, 0.1);
+    top: 100%; /* Position below the parent */
+    left: 0;
+    background-color: white;
+    list-style: none;
+    padding: 10px;
+    margin: 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
   }
 
   .navmenu .dropdown ul li {
@@ -1891,7 +1875,7 @@ section,
 .restaurant-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  background: linear-gradient(to right, #a31616, #a31616);
+  background: linear-gradient(to right, yellow, yellow);
   color: white;
 }
 .restaurant-card h2 {
@@ -1936,14 +1920,77 @@ section,
   cursor: not-allowed;
 }
 
+/* Ensure the layout stacks vertically on smaller screens */
 @media (max-width: 768px) {
   .layout {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column; /* Stacks the elements vertically */
   }
+
+  /* Map Section */
   #map {
-    height: 300px;
+    height: 300px; /* Reduce height for smaller screens */
+    border-radius: 8px; /* Match mobile-friendly design */
+  }
+
+  /* Sidebar */
+  .sidebar {
+    display: none; /* Initially hidden */
+    position: fixed;
+    top: 60px; /* Adjust for header */
+    left: 0;
+    width: 100%; /* Full-width on mobile */
+    height: calc(100vh - 60px); /* Full height minus header */
+    background: #f9f9f9;
+    z-index: 1000;
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Main Content */
+  .main-content {
+    margin: 0; /* Remove extra margins */
+    padding: 10px; /* Add spacing */
+  }
+
+  /* Adjust search input */
+  .search-box input {
+    font-size: 1rem; /* Adjust font size */
+    padding: 10px; /* Add padding for touch input */
+  }
+
+  /* Pagination Controls */
+  #pagination-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
   }
 }
+
+.filter-section label {
+  font-size: 16px; /* Increase font size for readability */
+  padding: 10px 0; /* Add padding for touch-friendly input */
+}
+
+.filter-section input {
+  transform: scale(1.5); /* Increase checkbox size */
+  margin-right: 10px;
+}
+
+
+/* Sidebar toggle button for mobile */
+.sidebar-toggle {
+  display: inline-block;
+  cursor: pointer;
+  padding: 10px;
+  background: var(--accent-color);
+  color: white;
+  font-size: 18px;
+  border-radius: 5px;
+  text-align: center;
+}
+
 
 @media (max-width: 768px) {
   .layout {
@@ -2265,5 +2312,40 @@ input::placeholder {
   #search-button {
     margin-top: 10px;
     width: 100%;
+  }
+}
+
+
+/* Mobile Navigation */
+@media (max-width: 768px) {
+  .navmenu {
+    position: fixed;
+    top: 60px; /* Below the header */
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #f9f9f9;
+    display: none; /* Initially hidden */
+    flex-direction: column;
+    padding: 20px;
+    z-index: 1000;
+  }
+
+  .navmenu.active {
+    display: flex; /* Show menu when active */
+  }
+
+  .navmenu ul {
+    flex-direction: column; /* Stack menu items vertically */
+  }
+
+  .navmenu ul li {
+    margin: 10px 0;
+  }
+
+  .mobile-nav-toggle {
+    font-size: 24px;
+    cursor: pointer;
+    display: block; /* Show only on mobile */
   }
 }
