@@ -7,7 +7,7 @@ from sklearn.metrics import classification_report, accuracy_score
 import joblib
 
 # Load the dataset
-file_path = '/home/tamanna/Desktop/halalBites/Data/cleaned_comfort_food.csv'  # Replace with the actual cleaned file path
+file_path = '../Data/cleaned_comfort_food.csv'  # Replace with the actual cleaned file path
 data = pd.read_csv(file_path)
 
 # Inspect the dataset

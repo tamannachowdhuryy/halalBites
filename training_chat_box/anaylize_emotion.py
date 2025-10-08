@@ -2,7 +2,7 @@ import pandas as pd
 from collections import Counter
 
 # Load the dataset
-file_path = '/home/tamanna/Desktop/halalBites/Data/cleaned_comfort_food.csv'  # Adjust path as needed
+file_path = '../Data/cleaned_comfort_food.csv'  # Adjust path as needed
 data = pd.read_csv(file_path)
 
 # Preprocess the data

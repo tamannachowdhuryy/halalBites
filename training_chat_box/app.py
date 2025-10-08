@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for communication with the frontend
 
 # Load restaurant data
-data = pd.read_csv('/home/tamanna/Desktop/halalBites/Data/neb.csv')
+data = pd.read_csv('../Data/neb.csv')
 data['Boroughs'] = data['Boroughs'].str.lower()
 data['Neighborhood'] = data['Neighborhood'].fillna("").str.lower()  # Ensure Neighborhood column exists
 data['Cuisine'] = data['Cuisine'].fillna("").str.lower()
@@ -16,7 +16,8 @@ data['Rating'] = data['Rating'].fillna(data['Rating'].mean())
 data['Address'] = data['Address'].fillna("")  # Replace NaN with an empty string for addresses
 
 # Load emotion-food mapping
-emotion_food_mapping = pd.read_csv('/home/tamanna/Desktop/halalBites/Data/emotion_food_mapping.csv')
+emotion_food_mapping = pd.read_csv('../Data/emotion_food_mapping.csv')
+
 
 def match_cuisine(cuisine_list, suggested_foods):
     """Match cuisines based on suggested foods using fuzzy matching."""
@@ -85,9 +86,12 @@ def recommend():
                 print(f"Dataset After Mood Filter: {len(filtered_data)}")
 
     # Filter by craving (cuisine)
-    if craving:
-        filtered_data = filtered_data[filtered_data['Cuisine'].str.contains(craving, case=False, na=False)]
-        print(f"Dataset After Craving Filter: {len(filtered_data)}")
+    # Filter by cuisine
+    cuisine = user_input.get('cuisine', "").lower().strip()
+    if cuisine:
+        filtered_data = filtered_data[filtered_data['Cuisine'].str.contains(cuisine, case=False, na=False)]
+        print(f"Dataset After Cuisine Filter: {len(filtered_data)}")
+
 
     # Filter by price
     if price:

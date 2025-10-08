@@ -2,7 +2,7 @@ import pandas as pd
 import re
 
 # Load and preprocess your dataset
-data = pd.read_csv('/home/tamanna/Desktop/halalBites/Data/Full_version_Restrants - parsed_restaurants.csv')
+data = pd.read_csv('../Data/Full_version_Restrants - parsed_restaurants.csv')
 data['Address'] = data['Address'].fillna("").str.lower()  # Ensure Address is in lowercase
 
 # Function to extract neighborhood from address
@@ -32,6 +32,6 @@ data['Neighborhood'] = data['Neighborhood'].apply(lambda x: x.title() if x != "u
 print(data[['Address', 'Neighborhood']].head())
 
 # Save the dataset with the new column
-data.to_csv('/home/tamanna/Desktop/halalBites/Data/neb.csv', index=False)
+data.to_csv('../Data/neb.csv', index=False)
 
 
